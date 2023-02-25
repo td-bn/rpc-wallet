@@ -11,3 +11,13 @@ fn main() -> Result<()> {
 
     Ok(())
 }
+
+/*
+ * TODO:
+ *  - add rpc connection to Regtest
+ *  - send some sats to BDK wallet
+ *  - integration test for adding balance to wallet
+ *  - multisig b/w two wallets
+ *
+ *  - any other interesting thing?
+ */
