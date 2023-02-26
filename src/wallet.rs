@@ -1,27 +1,60 @@
-use std::str::FromStr;
+use std::{str::FromStr, ops::Deref};
 
 use anyhow::Result;
 use bdk::{
-    bitcoin::{self, secp256k1::Secp256k1, util::bip32::DerivationPath},
+    bitcoin::{self, secp256k1::Secp256k1, util::bip32::DerivationPath, Address},
     database::MemoryDatabase,
     keys::DerivableKey,
     keys::{bip39::Mnemonic, DescriptorKey, ExtendedKey},
-    miniscript::Segwitv0,
+    miniscript::Segwitv0, blockchain::{RpcBlockchain, RpcConfig, ConfigurableBlockchain}, wallet::AddressIndex, SyncOptions,
 };
 
-pub(crate) type Wallet = bdk::Wallet<MemoryDatabase>;
-
-// Generate a new in-memory BDK wallet using a mnemonic, and a password
-pub fn new_wallet(mnemonic: Mnemonic, password: Option<String>) -> Result<Wallet> {
-    let (r, c) = get_descriptor(mnemonic, password);
-    let wallet = bdk::Wallet::new(
-        &r,
-        Some(&c),
-        bitcoin::Network::Regtest,
-        MemoryDatabase::new(),
-    )?;
-    Ok(wallet)
+pub struct Wallet {
+    wallet: bdk::Wallet<MemoryDatabase>,
+    // TODO: Make this more generic?
+    blockchain: RpcBlockchain,
 }
+
+impl Wallet {
+    // Generate a new in-memory BDK wallet using a mnemonic, and a password
+    pub fn new(mnemonic: Mnemonic, password: Option<String>, config: RpcConfig) -> Result<Self> {
+        let (r, c) = get_descriptor(mnemonic, password);
+        let wallet = bdk::Wallet::new(
+            &r,
+            Some(&c),
+            bitcoin::Network::Regtest,
+            MemoryDatabase::new(),
+        )?;
+        let blockchain = RpcBlockchain::from_config(&config)?;
+        Ok(Self {
+            wallet,
+            blockchain,
+        })
+    }
+
+    // Returns a new address using a new AddressIndex
+    pub fn new_address(&self) -> Address {
+        self.wallet.get_address(AddressIndex::New).unwrap().address
+    }
+
+    // Sync with the blockchain
+    pub fn sync(&self) -> Result<()>{
+        self.wallet.sync(&self.blockchain, SyncOptions::default())
+            .map_err(|e| e.into())
+    }
+
+    // Returns confirmed balance of the BDK wallet
+    pub fn get_balance(&self) -> Result<u64> {
+        let bal = self.wallet.get_balance()?.confirmed;
+        Ok(bal)
+    }
+
+    // Returns bdk wallet instance
+    pub fn bdk_wallet(&self) -> &bdk::Wallet<MemoryDatabase> {
+        &self.wallet
+    }
+}
+
 
 // generate new descriptor and return descriptors for (receive, change)
 fn get_descriptor(mnemonic: Mnemonic, password: Option<String>) -> (String, String) {

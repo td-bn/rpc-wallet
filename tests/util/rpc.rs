@@ -1,7 +1,7 @@
 use anyhow::Result;
 use bdk::{
     bitcoincore_rpc::{Auth, Client, RpcApi},
-    blockchain::{rpc::{Auth as rpcAuth, RpcConfig}, RpcBlockchain, ConfigurableBlockchain},
+    blockchain::rpc::{Auth as rpcAuth, RpcConfig},
 };
 
 pub fn rpc_client() -> Result<Client> {
@@ -14,13 +14,15 @@ pub fn mine_a_block(client: &Client) {
     client.generate_to_address(1, &address).unwrap();
 }
 
-pub fn rpc_blockchain(wallet_name: String) -> RpcBlockchain {
-    let config = RpcConfig {
+pub fn rpc_config(wallet_name: String) -> RpcConfig {
+    RpcConfig {
         url: "http://127.0.0.1:18443".to_string(),
-        auth: rpcAuth::UserPass{username: "admin1".to_string(), password: "123".to_string()},
+        auth: rpcAuth::UserPass {
+            username: "admin1".to_string(),
+            password: "123".to_string(),
+        },
         network: bdk::bitcoin::Network::Regtest,
         wallet_name,
         sync_params: None,
-    };
-    RpcBlockchain::from_config(&config).unwrap()
+    }
 }
