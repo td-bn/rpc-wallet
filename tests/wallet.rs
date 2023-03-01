@@ -5,7 +5,7 @@ use bdk::{
     bitcoincore_rpc::RpcApi,
     keys::bip39::{Language, Mnemonic},
 };
-use bdk_wallet::wallet::Wallet;
+use bdk_wallet::{wallet::Wallet, keys::get_descriptors};
 
 use util::rpc::{mine_a_block, rpc_client, rpc_config} ;
 
@@ -19,9 +19,10 @@ fn rpc_connection() {
 fn sending_sats_to_bdk_wallet() {
     let client = rpc_client().unwrap();
 
-    let config = rpc_config("bdk_wallet".to_string());
+    let config = rpc_config("bwallet".to_string());
 
-    let wallet = Wallet::new(mnemonic(), None, config).unwrap();
+    let (r,c) = get_descriptors(mnemonic(), None);
+    let wallet = Wallet::new(r, Some(c), config).unwrap();
     let address = wallet.new_address();
 
     let info = client.get_blockchain_info().unwrap();
