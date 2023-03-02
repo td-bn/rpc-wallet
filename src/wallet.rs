@@ -1,7 +1,7 @@
 use anyhow::Result;
 use bdk::{
-    bitcoin::{self, Address},
-    blockchain::{ConfigurableBlockchain, RpcBlockchain, RpcConfig},
+    bitcoin::{self, Address, Transaction},
+    blockchain::{ConfigurableBlockchain, RpcBlockchain, RpcConfig, Blockchain},
     database::MemoryDatabase,
     wallet::AddressIndex,
     SyncOptions,
@@ -42,6 +42,11 @@ impl Wallet {
     pub fn get_balance(&self) -> Result<u64> {
         let bal = self.wallet.get_balance()?.confirmed;
         Ok(bal)
+    }
+
+    pub fn broadcast(&self, tx: Transaction) -> Result<()> {
+        self.blockchain.broadcast(&tx)
+            .map_err( |e| e.into())
     }
 
     // Returns bdk wallet instance

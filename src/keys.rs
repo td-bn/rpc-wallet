@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use bdk::{
-    bitcoin::{self, secp256k1::Secp256k1, util::bip32::{DerivationPath, ExtendedPrivKey}},
+    bitcoin::{self, secp256k1::Secp256k1, util::bip32::DerivationPath},
     keys::DerivableKey,
     keys::{bip39::Mnemonic, DescriptorKey, ExtendedKey},
     miniscript::Segwitv0,
@@ -13,7 +13,7 @@ pub fn get_descriptors(mnemonic: Mnemonic, password: Option<String>) -> (String,
 
     let xkey: ExtendedKey = (mnemonic, password).into_extended_key().unwrap();
 
-    let xprv:ExtendedPrivKey = xkey.into_xprv(bitcoin::Network::Regtest).unwrap();
+    let xprv = xkey.into_xprv(bitcoin::Network::Regtest).unwrap();
 
     let mut keys = Vec::new();
 
