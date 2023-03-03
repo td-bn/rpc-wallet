@@ -15,7 +15,7 @@ use bdk::{
     },
     SignOptions,
 };
-use bdk_wallet::{keys::get_descriptors, wallet::Wallet};
+use bdk_wallet::{keys::get_descriptors, wallet::RpcWallet};
 
 use util::rpc::{mine_a_block, rpc_client, rpc_config};
 
@@ -32,7 +32,7 @@ fn sending_sats_to_bdk_wallet() {
     let config = rpc_config("bwallet".to_string());
 
     let (r, c) = get_descriptors(mnemonic(), None);
-    let wallet = Wallet::new(r, Some(c), config).unwrap();
+    let wallet = RpcWallet::new(r, Some(c), config).unwrap();
     let address = wallet.new_address();
 
     let info = client.get_blockchain_info().unwrap();
@@ -67,29 +67,29 @@ fn multisig() {
     let secp = Secp256k1::new();
 
     // Generate XPRIV, XPUB for first wallet
-    let path = "m/84'/1'/0'/0";
-    let config1 = rpc_config("w11".to_string());
+    let path = "m/84'/0'/0'/0/0";
+    let config1 = rpc_config("w111".to_string());
     let xkey: ExtendedKey = (mnemonic(), None).into_extended_key().unwrap();
     let xprv1 = xkey.into_xprv(bdk::bitcoin::Network::Regtest).unwrap();
     let s1 = xprv1
         .derive_priv(&secp, &DerivationPath::from_str(path).unwrap())
         .unwrap();
-    let p1 = ExtendedPubKey::from_priv(&secp, &s1);
+    let xpub1 = ExtendedPubKey::from_priv(&secp, &s1);
 
     // Generate XPRIV, XPUB for second wallet
-    let config2 = rpc_config("w22".to_string());
+    let config2 = rpc_config("w221".to_string());
     let xkey: ExtendedKey = (mnemonic(), None).into_extended_key().unwrap();
     let xprv2 = xkey.into_xprv(bdk::bitcoin::Network::Regtest).unwrap();
     let s2 = xprv2
         .derive_priv(&secp, &DerivationPath::from_str(path).unwrap())
         .unwrap();
-    let p2 = ExtendedPubKey::from_priv(&secp, &s2);
+    let xpub2 = ExtendedPubKey::from_priv(&secp, &s2);
 
-    let path = "/84'/1'/0'/*";
-    let desc = format!("wsh(multi(2,{}{},{}))", xprv1, path, p2);
-    let w1 = Wallet::new(desc, None, config1).unwrap();
-    let desc = format!("wsh(multi(2,{},{}{}))", p1, xprv2, path);
-    let w2 = Wallet::new(desc, None, config2).unwrap();
+    let path = "/84'/0'/0'/0/*";
+    let desc = format!("wsh(multi(2,{}{},{}))", xprv1, path, xpub2);
+    let w1 = RpcWallet::new(desc, None, config1).unwrap();
+    let desc = format!("wsh(multi(2,{},{}{}))", xpub1, xprv2, path);
+    let w2 = RpcWallet::new(desc, None, config2).unwrap();
 
     let address = w1.new_address();
 

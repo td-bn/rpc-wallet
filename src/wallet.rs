@@ -7,13 +7,13 @@ use bdk::{
     SyncOptions,
 };
 
-pub struct Wallet {
+pub struct RpcWallet {
     wallet: bdk::Wallet<MemoryDatabase>,
     // TODO: Make this more generic?
     blockchain: RpcBlockchain,
 }
 
-impl Wallet {
+impl RpcWallet {
     // Generate a new in-memory BDK wallet using a mnemonic, and a password
     pub fn new(r: String, c: Option<String>, config: RpcConfig) -> Result<Self> {
         let wallet = bdk::Wallet::new(
