@@ -4,18 +4,18 @@ use std::str::FromStr;
 
 use bdk::{
     bitcoin::{
-        secp256k1::{rand, Secp256k1},
+        secp256k1::Secp256k1,
         util::bip32::{DerivationPath, ExtendedPubKey},
-        Amount,
+        Amount, Network,
     },
     bitcoincore_rpc::RpcApi,
-    keys::{
-        bip39::{Language, Mnemonic},
-        DerivableKey, ExtendedKey,
-    },
+    keys::{DerivableKey, ExtendedKey},
     SignOptions,
 };
-use bdk_wallet::{keys::get_descriptors, wallet::RpcWallet};
+use bdk_wallet::{
+    keys::{get_descriptors, mnemonic},
+    wallet::RpcWallet,
+};
 
 use util::rpc::{mine_a_block, rpc_client, rpc_config};
 
@@ -31,7 +31,7 @@ fn sending_sats_to_bdk_wallet() {
 
     let config = rpc_config("bwallet".to_string());
 
-    let (r, c) = get_descriptors(mnemonic(), None);
+    let (r, c) = get_descriptors(mnemonic(), None, Network::Regtest);
     let wallet = RpcWallet::new(r, Some(c), config).unwrap();
     let address = wallet.new_address();
 
@@ -146,9 +146,4 @@ fn multisig() {
 
     // Balance lower after spend
     assert!(balance_after < balance_before);
-}
-
-fn mnemonic() -> Mnemonic {
-    let mut rng = rand::thread_rng();
-    Mnemonic::generate_in_with(&mut rng, Language::English, 12).unwrap()
 }

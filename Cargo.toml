@@ -7,5 +7,5 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.69"
-bdk = { version = "^0.21", default-features = false, features = ["all-keys", "key-value-db", "rpc"]}
+bdk = { version = "^0.21", default-features = false, features = ["all-keys", "electrum", "key-value-db", "rpc"]}
 
