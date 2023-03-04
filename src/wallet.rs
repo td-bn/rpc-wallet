@@ -1,10 +1,10 @@
 use anyhow::Result;
 use bdk::{
     bitcoin::{self, Address, Transaction},
-    blockchain::{ConfigurableBlockchain, RpcBlockchain, RpcConfig, Blockchain},
+    blockchain::{Blockchain, ConfigurableBlockchain, RpcBlockchain, RpcConfig},
     database::MemoryDatabase,
     wallet::AddressIndex,
-    SyncOptions,
+    SyncOptions
 };
 
 pub struct RpcWallet {
@@ -45,8 +45,7 @@ impl RpcWallet {
     }
 
     pub fn broadcast(&self, tx: Transaction) -> Result<()> {
-        self.blockchain.broadcast(&tx)
-            .map_err( |e| e.into())
+        self.blockchain.broadcast(&tx).map_err(|e| e.into())
     }
 
     // Returns bdk wallet instance

@@ -1,5 +1,3 @@
-mod util;
-
 use std::str::FromStr;
 
 use bdk::{
@@ -17,7 +15,7 @@ use bdk_wallet::{
     wallet::RpcWallet,
 };
 
-use util::rpc::{mine_a_block, rpc_client, rpc_config};
+use bdk_wallet::util::rpc::{mine_a_block, rpc_client, rpc_config};
 
 #[test]
 fn rpc_connection() {
