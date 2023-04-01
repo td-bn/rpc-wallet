@@ -67,6 +67,9 @@ fn multisig_using_managed_wallet() {
 
     let address = wallet.new_address();
 
+    println!("{}", address);
+    let address = wallet.new_address();
+    println!("{}", address);
     wallet.sync().unwrap();
     let balance_before = wallet.get_balance().unwrap();
 

@@ -8,7 +8,7 @@ use bdk::bitcoin::{
 };
 
 struct InitiatedMultisig {
-    path: String,
+    path: DerivationPath,
 }
 
 pub struct Manager<'a> {
@@ -63,10 +63,7 @@ impl<'a> Manager<'a> {
     }
 
     // Initiate a multisig wallet
-    pub fn initiate_multi_sig_wallet(
-        &mut self,
-        name: String,
-    ) -> Result<ExtendedPubKey> {
+    pub fn initiate_multi_sig_wallet(&mut self, name: String) -> Result<ExtendedPubKey> {
         let existing = self.wallets.get(&name);
         if let Some(_) = existing {
             return Err(anyhow!("Wallet name already exists"));
@@ -77,15 +74,12 @@ impl<'a> Manager<'a> {
         }
 
         let secp = Secp256k1::new();
-        let base_path = format!("m/84'/1'/0'/{}", self.index);
-        self.index += 1;
-        let derivation_path = DerivationPath::from_str(&base_path)?;
+        let derivation_path = self.new_path();
         let derived_xprv = &self.xprv.derive_priv(&secp, &derivation_path).unwrap();
         let derived_xpub = ExtendedPubKey::from_priv(&secp, &derived_xprv);
 
-        self.initiated_multisigs.insert( name.clone(), InitiatedMultisig{
-            path: base_path,
-        });
+        self.initiated_multisigs
+            .insert(name.clone(), InitiatedMultisig { path: derivation_path });
 
         Ok(derived_xpub)
     }
@@ -104,35 +98,37 @@ impl<'a> Manager<'a> {
 
         let secp = Secp256k1::new();
         let existing = self.initiated_multisigs.get(&name);
-        if let Some(_) = existing {
-            let initiated_multisig = self.initiated_multisigs.remove(&name).unwrap();
-            let base_path = initiated_multisig.path;
-            let derivation_path = DerivationPath::from_str(&base_path)?;
-            let derived_xprv = &self.xprv.derive_priv(&secp, &derivation_path).unwrap();
-            let derived_xpub = ExtendedPubKey::from_priv(&secp, &derived_xprv);
-
-            let desc = format!("wsh(multi({},{},{}))", k, pubkeys[0], derived_xprv);
-
-            let config = rpc_config(name.clone());
-            let wallet = RpcWallet::new(desc, None, config)?;
-
-            self.wallets.insert(name, wallet);
-            Ok(derived_xpub)
+        let mut der_path_exists = false;
+        let derivation_path = if let Some(_) = existing {
+            der_path_exists = true;
+            self.initiated_multisigs.remove(&name).unwrap().path
         } else {
-            let base_path = format!("m/84'/1'/0'/{}", self.index);
-            self.index += 1;
-            let derivation_path = DerivationPath::from_str(&base_path)?;
-            let derived_xprv = &self.xprv.derive_priv(&secp, &derivation_path).unwrap();
-            let derived_xpub = ExtendedPubKey::from_priv(&secp, &derived_xprv);
+            self.new_path()
+        };
+        // let desc_priv = format!("{}/84'/1'/0'/0", self.xprv);
+        let derived_xprv = &self.xprv.derive_priv(&secp, &derivation_path).unwrap();
+        let derived_xpub = ExtendedPubKey::from_priv(&secp, &derived_xprv);
 
-            let desc = format!("wsh(multi({},{},{}))", k, derived_xprv, pubkeys[0]);
+        // Test with 2 of 2
+        let desc = if der_path_exists {
+            format!("wsh(multi({},{}/*,{}))", k, pubkeys[0], derived_xprv)
+        } else {
+            format!("wsh(multi({},{},{}/*))", k, derived_xprv, pubkeys[0])
+        };
+        println!("DESC: {:#?}", desc);
+        println!("PATH: {:#?}", derivation_path);
 
-            let config = rpc_config(name.clone());
-            let wallet = RpcWallet::new(desc, None, config)?;
+        let config = rpc_config(name.clone());
+        let wallet = RpcWallet::new(desc, None, config)?;
 
-            self.wallets.insert(name, wallet);
-            Ok(derived_xpub)
-        }
+        self.wallets.insert(name, wallet);
+        Ok(derived_xpub)
+    }
+
+    fn new_path(&mut self) -> DerivationPath {
+        let path = DerivationPath::from_str(&format!("m/84'/1'/0'/{}",self.index)).unwrap();
+        self.index += 1;
+        path
     }
 }
 
